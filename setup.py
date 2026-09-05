@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from setuptools import find_packages, setup
@@ -63,8 +64,8 @@ setup(
     python_requires=">=3.10",
     packages=find_packages(exclude=("tests", "tests.*")),
     scripts=PUBLIC_SCRIPTS,
-    ext_modules=build_ext_modules(),
-    cmdclass={"build_ext": BuildExtension.with_options(use_ninja=True)},
+    ext_modules=([] if os.environ.get("WALLX_SKIP_CUDA_EXT", "0") == "1" else build_ext_modules()),
+    cmdclass=({} if os.environ.get("WALLX_SKIP_CUDA_EXT", "0") == "1" else {"build_ext": BuildExtension.with_options(use_ninja=True)}),
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",

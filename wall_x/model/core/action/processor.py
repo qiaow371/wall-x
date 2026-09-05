@@ -125,17 +125,17 @@ class ActionProcessor(nn.Module):
             dof_mask: [batch_size, action_dim]
         """
         with torch.autocast("cuda", dtype=torch.float32):
-            proprioception = proprioception.to(
-                device=self.propri_proj.weight.device
-            ).to(dtype=self.propri_proj.weight.dtype)
+            # Keep the input device. FSDP CPU-offload reports weight.device=cpu
+            # even though compute runs on CUDA after all-gather.
+            compute_device = proprioception.device
+            compute_dtype = torch.float32
+            proprioception = proprioception.to(device=compute_device, dtype=compute_dtype)
             if dof_mask is not None:
                 if self.config.proj_with_mask:
+                    dof_mask = dof_mask.to(device=compute_device, dtype=compute_dtype)
                     proprioception = torch.cat(
                         [proprioception, dof_mask], dim=-1
                     )  # .unsqueeze(1)
-            proprioception = proprioception.to(
-                device=self.propri_proj.weight.device
-            ).to(dtype=self.propri_proj.weight.dtype)
             proprio_embed = self.propri_proj(
                 proprioception
             )  # [batch_size, 1, state_hidden_size]

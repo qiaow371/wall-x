@@ -16,6 +16,11 @@ from torch.distributed.fsdp import (
     MixedPrecisionPolicy,
     OffloadPolicy,
 )
+
+try:
+    from torch.distributed.fsdp import CPUOffloadPolicy as _CPUOffloadPolicy
+except ImportError:  # older torch
+    _CPUOffloadPolicy = None
 from torch.nn.parallel import DistributedDataParallel as DDP
 
 _logger = logging.getLogger(__name__)
@@ -166,11 +171,16 @@ class FSDPStrategy(DistributionStrategy):
             "_hybrid_shard_zero2",
         )
 
-        offload_policy: Optional[OffloadPolicy] = (
-            OffloadPolicy(pin_memory=True)
-            if self._cfg.get("fsdp_cpu_offload", False)
-            else None
-        )
+        offload_policy: Optional[OffloadPolicy] = None
+        if self._cfg.get("fsdp_cpu_offload", False):
+            # torch>=2.7: CPUOffloadPolicy(pin_memory=...); base OffloadPolicy is no-op
+            if _CPUOffloadPolicy is not None:
+                offload_policy = _CPUOffloadPolicy(pin_memory=True)
+            else:
+                try:
+                    offload_policy = OffloadPolicy(pin_memory=True)
+                except TypeError:
+                    offload_policy = OffloadPolicy()
 
         mp_policy: Optional[MixedPrecisionPolicy]
         if self._cfg.get("use_mixed_precision", True):
