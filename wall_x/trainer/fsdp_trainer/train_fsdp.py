@@ -157,6 +157,20 @@ def main():
     torch.cuda.set_device(device)
     torch.distributed.init_process_group("nccl", device_id=device)
     cfg = load_config(args.config, cli_args=args)
+    if is_main_process():
+        try:
+            repo_scripts = os.path.abspath(
+                os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts")
+            )
+            if repo_scripts not in sys.path:
+                sys.path.insert(0, repo_scripts)
+            from hw_train_monitor import start_from_trainer
+
+            save = getattr(getattr(cfg, "checkpoint", None), "save_path", None)
+            save = save or getattr(cfg, "save_path", None) or "./ckpt"
+            start_from_trainer(os.path.join(str(save), "hw.jsonl"))
+        except Exception:
+            logger.exception("hardware sidecar failed to start (training continues)")
     wandb_run = setup_logger(cfg)
     print_fsdp_config(cfg)
 
