@@ -266,6 +266,12 @@ class ModelAdapter(ABC):
             ("action_loss", "act_loss", ".6f"),
             ("action_accuracy", "accuracy", ".4f"),
             ("flow_loss", "flow_loss", ".6f"),
+            ("cross_entropy_loss", "ar_ce", ".6f"),
+            ("Action loss group/xyz", "xyz", ".6f"),
+            ("Action loss group/r6d", "r6d", ".6f"),
+            ("Action loss group/grip", "grip", ".6f"),
+            ("training/pad_mean", "pad", ".6f"),
+            ("training/nan", "nan", ".4f"),
         ]
         if tokenizer_mixin is not None:
             for key in tokenizer_mixin.get_accuracy_keys():

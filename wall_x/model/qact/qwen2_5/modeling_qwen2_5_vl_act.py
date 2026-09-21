@@ -89,6 +89,7 @@ class Qwen2_5_VLACausalLMOutputWithPast(ModelOutput):
 
     channel_loss_dict: Optional[dict[torch.FloatTensor]] = None
     channel_loss_count_dict: Optional[dict[torch.FloatTensor]] = None
+    flow_debug: Optional[dict] = None
 
 
 class Qwen2_5_VLDecoderLayer_with_MoE(nn.Module, ActionModelMixMin):
@@ -1464,6 +1465,7 @@ class Qwen2_5_VLMoEForAction(
             flow_loss,
             channel_loss_dict,
             channel_loss_count_dict,
+            flow_debug,
         ) = self.compute_loss(
             hidden_states=hidden_states,
             logits=logits,
@@ -1494,6 +1496,7 @@ class Qwen2_5_VLMoEForAction(
             rope_deltas=self.rope_deltas,
             channel_loss_dict=channel_loss_dict,
             channel_loss_count_dict=channel_loss_count_dict,
+            flow_debug=flow_debug,
         )
 
     def predict_action(self, predict_mode: str, **kwargs):

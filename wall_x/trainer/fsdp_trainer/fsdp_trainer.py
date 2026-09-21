@@ -737,6 +737,7 @@ class FSDPTrainer(DistributedTrainer):
         if main:
             raw_stats = getattr(self, "_current_step_raw_stats", None)
             if raw_stats is not None:
+                raw_stats["steptime"] = float(time_per_step)
                 self.metrics_logger.record_step(raw_stats, is_main=True)
                 avg_stats = self.metrics_logger.flush_if_due(self.global_step)
                 if avg_stats is not None:
@@ -765,6 +766,28 @@ class FSDPTrainer(DistributedTrainer):
             mfu_info=mfu_info,
         )
         self.log(line)
+        dim_pairs = [
+            (k, v)
+            for k, v in stats.items()
+            if k.startswith("Action loss dim/") and isinstance(v, (int, float))
+        ]
+        if dim_pairs:
+            worst_k, worst_v = max(dim_pairs, key=lambda kv: kv[1])
+            self.log(
+                "PROBE step={} loss={:.6f} flow={} ar_ce={} nan={} worst={}={:.4f} "
+                "head={} tail={} steptime={:.3f}s".format(
+                    self.global_step,
+                    loss_to_print,
+                    stats.get("flow_loss", "n/a"),
+                    stats.get("cross_entropy_loss", "n/a"),
+                    stats.get("training/nan", "n/a"),
+                    worst_k,
+                    worst_v,
+                    stats.get("Action loss per_step/head", "n/a"),
+                    stats.get("Action loss per_step/tail", "n/a"),
+                    float(time_per_step),
+                )
+            )
 
     def _should_save_checkpoint(self) -> bool:
         """Check if checkpoint should be saved"""

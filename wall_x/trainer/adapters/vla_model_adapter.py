@@ -300,6 +300,20 @@ class VLAdapter(ModelAdapter):
         if log_flow_loss is not None:
             step_stats["flow_loss"] = log_flow_loss
 
+        # TRAIN_DEBUG_LOG: AR CE kept separate from flow; per-dim/group/step from
+        # unreduced flow MSE. Keys already named for wandb (TB-style tags).
+        if "cross_entropy_loss" in step_stats:
+            step_stats["training/ar_ce"] = step_stats["cross_entropy_loss"]
+        if "flow_loss" in step_stats:
+            step_stats["training/flow_loss"] = step_stats["flow_loss"]
+        flow_debug = self.get_output_field(outputs, "flow_debug")
+        if flow_debug:
+            for key, value in flow_debug.items():
+                if torch.is_tensor(value):
+                    step_stats[key] = float(value.detach().float().item())
+                elif isinstance(value, (int, float)):
+                    step_stats[key] = float(value)
+
         channel_loss_dict = self.get_output_field(outputs, "channel_loss_dict")
         channel_loss_count_dict = self.get_output_field(
             outputs, "channel_loss_count_dict"

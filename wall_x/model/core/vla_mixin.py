@@ -556,6 +556,7 @@ class ActionGenerationMixin(GenerationMixin):
 
         loss = 0
         cross_entropy_loss, flow_loss = None, None
+        flow_debug = None
 
         if dataset_names is not None:
             unique_datasets_name = list(set(dataset_names))
@@ -703,6 +704,18 @@ class ActionGenerationMixin(GenerationMixin):
                     _flow_loss = _flow_loss.view(
                         dof_mask.shape[0], dof_mask.shape[1], dof_mask.shape[2]
                     )
+                    if valid_mask is not None:
+                        _valid_3d = valid_mask.view(
+                            dof_mask.shape[0], dof_mask.shape[1], dof_mask.shape[2]
+                        )
+                    else:
+                        _valid_3d = torch.ones_like(_flow_loss)
+                    try:
+                        from wall_x.trainer.debug_log import flow_debug_stats
+
+                        flow_debug = flow_debug_stats(_flow_loss, _valid_3d)
+                    except Exception:
+                        flow_debug = None
 
                     # compute flow channel loss
                     if unique_datasets_name is not None:
@@ -743,4 +756,5 @@ class ActionGenerationMixin(GenerationMixin):
             flow_loss,
             channel_loss_dict,
             channel_loss_count_dict,
+            flow_debug,
         )
